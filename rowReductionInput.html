@@ -6,28 +6,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-    <h1>Matrix Row Reduction</h1>
-    <a href="HTMLPage1.html">Go back to home page</a>
-    <p>Please enter the size of the matrix to row reduce: </p>
-    <form>
-        Matrix 1 Rows: <br> <input type="number" id="row1" name="row1">
-        <br>
-        Matrix 1 Columns: <br> <input type="number" id="col1" name="col1">
-        <br>
-        <input type="button" value="Create Matrix" onclick="createMatrixInputs()">
-    </form>
+	<h1>Matrix Row Reduction</h1>
+	<a href="HTMLPage1.html">Go back to home page</a>
+	<p>Please enter the size of the matrix to row reduce: </p>
+	<form>
+		Matrix 1 Rows: <br> <input type="number" id="row1" name="row1">
+		<br>
+		Matrix 1 Columns: <br> <input type="number" id="col1" name="col1">
+		<br>
+		<input type="button" value="Create Matrix" onclick="createMatrixInputs()">
+		<input type="button" value="Need Help" onclick="explainCalculator()">
+		<input type="button" value="Show History" onclick="showHistory()">
+	</form>
 
-    <p> Input matrices here: </p>
-    <div id="matrices"></div>
-    <p>Result:</p>
-    <div id="result"></div>
+	<div id="matrices"></div>
+	<div id="result"></div>
+	<div id="solutionCheck"></div>
 
-    <script>
+	<script>
 		//Global variables to hold matrix inputs
 		let matrix1 = [];
+        let matrix2 = [];
+
+        //Global variables to hold history of last 5 calculations
+        let history = new Array(5);
+        for (let i = 0; i < 5; i++) {
+            history[i] = 0;
+        }
+
+        // Function to display how to use calculator when need help is clicked
+        function explainCalculator() {
+            let matricesDiv = document.getElementById("matrices");
+            matricesDiv.innerhtml = "";
+            let resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = "";
+            matricesDiv.innerHTML = "";
+            let checkDiv = document.getElementById("solutionCheck");
+            checkDiv.innerHTML = "";
+
+            let text = document.createTextNode('To use this calculator, please input the size of a matrix. Next, click the create matrix button. This will allow you to input values for each matrix entry. You then have the option to either show the solution, guess the solution yourself, or get a walkthrough of the solution. Click the show history button to see the last 5 calculations done.')
+            matricesDiv.appendChild(text);
+
+        }
 
 		// Function to create matrix input boxes
 		function createMatrixInputs() {
+            let matricesDiv = document.getElementById("matrices");
+            matricesDiv.innerHTML = "";
+            let text = document.createTextNode('Input Matrices Here: ');
+            matricesDiv.appendChild(text);
+            matricesDiv.appendChild(document.createElement("br"));
+
 			let row1 = document.getElementById("row1").value;
 			let col1 = document.getElementById("col1").value;
 
@@ -35,8 +64,6 @@
 			matrix1 = [];
 
 
-			let matricesDiv = document.getElementById("matrices");
-			matricesDiv.innerHTML = "";
 
 			let i, j;
 
@@ -64,10 +91,33 @@
 			button.value = "Row Reduce Matrix";
 			button.onclick = function () { doRowReduction() };
 			matricesDiv.appendChild(button);
+
+            // Add a button to submit a guess for the answer
+            var button2 = document.createElement("input");
+            button2.type = "button";
+            button2.value = "Guess Solution"
+            button2.onclick = function () { guessSolution() };
+            matricesDiv.appendChild(button2);
+
+            // Add a button to walkthrough solution
+            var button3 = document.createElement("input");
+            button3.type = "button";
+            button3.value = "Walkthrough Solution";
+            button3.onclick = function () { walkthroughRowReduction() };
+            matricesDiv.appendChild(button3);
+
+            // Add a button to clear input boxes
+            var button4 = document.createElement("input");
+            button4.type = "button";
+            button4.value = "Clear Input";
+            button4.onclick = function () { createMatrixInputs() };
+            matricesDiv.appendChild(button4);
 		}
 
-		// Function to multiply two matrices and print the result
+		// Function to do row reduction and print the result
 		function doRowReduction() {
+            let checkDiv = document.getElementById("solutionCheck");
+            checkDiv.innerHTML = "";
 			let i, j;
 
 			let rows1 = matrix1.length;
@@ -75,6 +125,9 @@
 
 			let resultDiv = document.getElementById("result");
 			resultDiv.innerHTML = "";
+            let text = document.createTextNode('Result: ');
+            resultDiv.appendChild(text);
+            resultDiv.appendChild(document.createElement("br"));
 
 			// Get values from input boxes and put into matrices
 			inputMat1 = []
@@ -85,30 +138,435 @@
 				}
 			}
 
+            // Create a duplicate matrix
+            let copiedMatrix = [];
+            for (i = 0; i < inputMat1.length; i++)
+                copiedMatrix[i] = inputMat1[i].slice();
 
 			// Run the multiply function
-			let result = rowReductionEchelon(inputMat1);
+			let result = rowReductionEchelon(copiedMatrix);
 
 
-            // Add the matrix values to a table and add to document
-            let table = document.createElement("table");
+			// Add the matrix values to a table and add to document
+			let table = document.createElement("table");
 
+
+			for (i = 0; i < rows1; i++) {
+				let row = document.createElement("tr");
+				for (j = 0; j < cols1; j++) {
+					let cell = document.createElement("td");
+					cell.innerText = result[i][j];
+					row.appendChild(cell);
+				}
+				table.appendChild(row);
+			}
+
+			resultDiv.appendChild(table);
+
+			// Add values to history
+            addHistory(inputMat1, result);
+		}
+
+
+
+        // Function to allow the user to input a guess at the solution
+        function guessSolution() {
+            let checkDiv = document.getElementById("solutionCheck");
+            checkDiv.innerHTML = "";
+
+            let i, j;
+            // Get matrix sizes
+            let rows1 = matrix1.length;
+            let cols1 = matrix1[0].length;
+            
+
+            // Give variable to the div and display text
+            let resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = "";
+            let text = document.createTextNode('Input guess here (Please round to 3 decimal places): ');
+            resultDiv.appendChild(text);
+            resultDiv.appendChild(document.createElement("br"));
+
+            // Create empty matrix for input
+            matrix2 = [];
+
+            // Add input boxes for solution matrix
+            for (i = 0; i < rows1; i++) {
+                matrix2.push([]);
+                for (j = 0; j < cols1; j++) {
+                    let input = document.createElement("input");
+                    input.type = "number";
+                    input.name = "matrixg-" + i + "-" + j;
+                    input.value = 0;
+                    resultDiv.appendChild(input);
+                    matrix2[i][j] = input;
+                }
+                resultDiv.appendChild(document.createElement("br"));
+            }
+
+            // Get values from original input boxes and put into matrices
+            inputMat1 = []
+            for (i = 0; i < rows1; i++) {
+                inputMat1.push([])
+                for (j = 0; j < cols1; j++) {
+                    inputMat1[i][j] = matrix1[i][j].value
+                }
+            }
+
+
+            // Run the multiply function to get correct solution
+            let result = rowReductionEchelon(inputMat1);
+
+            // Add button to check solution
+            var button = document.createElement("input");
+            button.type = "button";
+            button.value = "Check Solution"
+            button.onclick = function () { checkSolution(result) };
+            resultDiv.appendChild(button);
+
+            // Add a button to clear input boxes
+            var button2 = document.createElement("input");
+            button2.type = "button";
+            button2.value = "Clear Input";
+            button2.onclick = function () { guessSolution() };
+            resultDiv.appendChild(button2);
+
+        }
+
+        // Function to check the solution given
+        function checkSolution(correctMatrix) {
+            let checkDiv = document.getElementById("solutionCheck");
+            checkDiv.innerHTML = "";
+
+            // Get size of solution matrix
+            let rows1 = correctMatrix.length;
+            let cols1 = correctMatrix[0].length;
+
+            let i, j;
+
+
+            let correctSolution = true;
 
             for (i = 0; i < rows1; i++) {
-                let row = document.createElement("tr");
                 for (j = 0; j < cols1; j++) {
+                    if ((Math.round(matrix2[i][j].value * 1000) / 1000) != (Math.round(correctMatrix[i][j] * 1000) / 1000)) {
+                        correctSolution = false;
+                    }
+                }
+            }
+
+            if (correctSolution == true) {
+                let text = document.createTextNode('Correct Solution!');
+                checkDiv.appendChild(text);
+                var audio = new Audio('correct.wav');
+                audio.play();
+            }
+            else {
+                let text = document.createTextNode('Incorrect Solution.');
+                checkDiv.appendChild(text);
+                var audio = new Audio('incorrect.wav');
+                audio.play();
+            }
+        }
+
+
+        // Function to walkthrough row reduction
+        function walkthroughRowReduction() {
+            let checkDiv = document.getElementById("solutionCheck");
+            checkDiv.innerHTML = "";
+
+            let row1 = matrix1.length;
+            let col1 = matrix1[0].length;
+
+            // Give variable to the div
+            let resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = "";
+
+            let i, j, k;
+
+            // Get values from original input boxes and put into matrices
+            inputMat1 = [];
+            for (i = 0; i < row1; i++) {
+                inputMat1.push([]);
+                for (j = 0; j < col1; j++) {
+                    inputMat1[i][j] = matrix1[i][j].value
+                }
+            }
+
+            // Create an empty result matrix
+            let result = new Array(row1);
+            for (i = 0; i < row1; i++)
+                result[i] = new Array(col1);
+
+            // Fill the result array with zeroes
+            for (i = 0; i < row1; i++) {
+                for (j = 0; j < col1; j++) {
+                    result[i][j] = 0;
+                }
+            }
+
+            // Create a duplicate matrix
+            let copiedMatrix = [];
+            for (i = 0; i < inputMat1.length; i++)
+                copiedMatrix[i] = inputMat1[i].slice();
+
+
+            // Do Row reduction on matrix with outputs
+            let currentPivotTo = 0
+            let row, column;
+            // Loop through each column checking for pivots
+            for (column = 0; column < col1; column++) {
+                // Find pivot row for this column
+                let pivotRow = -1;
+                
+                for (row = currentPivotTo; row < row1; row++) {
+                    if (copiedMatrix[row][column] != 0) {
+                        pivotRow = row;
+                        break;
+                    }
+                }
+
+                
+                // If no pivot row, move to next column
+                if (pivotRow == -1) {
+                    continue;
+                }
+
+                //Output current pivot row
+                let string = `Choose row ${pivotRow+1} as the next pivot row.`
+                let pivText = document.createTextNode(string);
+                resultDiv.appendChild(pivText);
+                resultDiv.appendChild(document.createElement("br"));
+
+                // Move pivot row to top of matrix
+                if (pivotRow != currentPivotTo) {
+                    let string = `Swap row ${pivotRow+1} with row ${currentPivotTo+1}.`
+                    let swapText = document.createTextNode(string);
+                    resultDiv.appendChild(swapText);
+                    resultDiv.appendChild(document.createElement("br"));
+
+                    let tempArray = copiedMatrix[pivotRow];
+                    copiedMatrix[pivotRow] = copiedMatrix[currentPivotTo];
+                    copiedMatrix[currentPivotTo] = tempArray;
+                    pivotRow = currentPivotTo;
+
+                    
+
+                    // Output the current matrix
+                    let text3 = document.createTextNode("Current Matrix: ");
+                    resultDiv.appendChild(text3);
+                    resultDiv.appendChild(document.createElement("br"));
+
+                    let table = document.createElement("table");
+                    let m, n;
+                    for (m = 0; m < row1; m++) {
+                        let row = document.createElement("tr");
+                        for (n = 0; n < col1; n++) {
+                            let cell = document.createElement("td");
+                            cell.innerText = copiedMatrix[m][n];
+                            row.appendChild(cell);
+                        }
+                        table.appendChild(row);
+                    }
+                    resultDiv.appendChild(table);
+                    resultDiv.appendChild(document.createElement("br"));
+                }
+
+                // Calculate the current pivot value
+                const pivot = copiedMatrix[pivotRow][column];
+                string = `Reduce the pivot row by a factor of ${pivot}.`
+                let reduceText = document.createTextNode(string);
+                resultDiv.appendChild(reduceText);
+                resultDiv.appendChild(document.createElement("br"));
+
+
+                // Reduce the pivot row based on the pivot
+                for (j = column; j < col1; j++) {
+                    copiedMatrix[pivotRow][j] = copiedMatrix[pivotRow][j] / pivot;
+                }
+
+                //Output current matrix
+                let text3 = document.createTextNode("Current Matrix: ");
+                resultDiv.appendChild(text3);
+                resultDiv.appendChild(document.createElement("br"));
+                let table = document.createElement("table");
+                let m, n;
+                for (m = 0; m < row1; m++) {
+                    let row = document.createElement("tr");
+                    for (n = 0; n < col1; n++) {
+                        let cell = document.createElement("td");
+                        cell.innerText = copiedMatrix[m][n];
+                        row.appendChild(cell);
+                    }
+                    table.appendChild(row);
+                }
+                resultDiv.appendChild(table);
+                resultDiv.appendChild(document.createElement("br"));
+
+
+                // Update each row based on pivot row
+                for (i = 0; i < row1; i++) {
+                    if (i == pivotRow) {
+                        continue;
+                    }
+
+                    let factor = copiedMatrix[i][column];
+
+                    string = `Row ${i+1} = Row ${i+1} - (${factor}) * Row ${pivotRow+1}`
+                    let rowReduceText = document.createTextNode(string);
+                    resultDiv.appendChild(rowReduceText);
+                    resultDiv.appendChild(document.createElement("br"));
+
+                    for (j = column; j < col1; j++) {
+                        copiedMatrix[i][j] -= factor * copiedMatrix[pivotRow][j];
+                    }
+
+                    //Output current matrix
+                    let text3 = document.createTextNode("Current Matrix: ");
+                    resultDiv.appendChild(text3);
+                    resultDiv.appendChild(document.createElement("br"));
+                    let table = document.createElement("table");
+                    let m, n;
+                    for (m = 0; m < row1; m++) {
+                        let row = document.createElement("tr");
+                        for (n = 0; n < col1; n++) {
+                            let cell = document.createElement("td");
+                            cell.innerText = copiedMatrix[m][n];
+                            row.appendChild(cell);
+                        }
+                        table.appendChild(row);
+                    }
+                    resultDiv.appendChild(table);
+                    resultDiv.appendChild(document.createElement("br"));
+
+                }
+
+                // Increment row to be pivoted to
+                currentPivotTo += 1;
+                if (currentPivotTo == row1) {
+                    break;
+                }
+            }
+
+
+            let text = document.createTextNode("Final Matrix: ");
+            resultDiv.appendChild(text);
+            resultDiv.appendChild(document.createElement("br"));
+
+            
+            // Add the matrix values to a table and add to document
+            let table = document.createElement("table");
+            for (i = 0; i < row1; i++) {
+                let row = document.createElement("tr");
+                for (j = 0; j < col1; j++) {
                     let cell = document.createElement("td");
-                    cell.innerText = result[i][j];
+                    cell.innerText = copiedMatrix[i][j];
                     row.appendChild(cell);
                 }
                 table.appendChild(row);
             }
-
             resultDiv.appendChild(table);
-		}
-    </script>
+            
 
-    <script src="RowReduction.js"></script>
+        }
+
+
+        // Function to add to history 
+        function addHistory(input1, result) {
+            history.shift();
+            history[4] = [input1, result];
+        }
+
+        // Function to show history
+        function showHistory() {
+            // Clear all divs
+            let matricesDiv = document.getElementById("matrices");
+            matricesDiv.innerhtml = "";
+            let resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = "";
+            matricesDiv.innerHTML = "";
+            let checkDiv = document.getElementById("solutionCheck");
+            checkDiv.innerHTML = "";
+
+            // Output if no calculations done yet
+            if (history[4] == 0) {
+                let text = document.createTextNode("No calculations done yet!");
+                matricesDiv.appendChild(text);
+                return;
+            }
+            let StartPoint = 0;
+            for (let i = 0; i < 5; i++) {
+                if (history[i] == 0) {
+                    StartPoint += 1;
+                }
+                else {
+                    inputMat1 = history[i][0];
+                    result = history[i][1];
+
+
+                    let row1 = inputMat1.length;
+                    let col1 = inputMat1[0].length;
+
+
+                    string = `Calculation ${i + 1 - StartPoint}:`
+                    let text = document.createTextNode(string);
+                    matricesDiv.appendChild(text);
+                    matricesDiv.appendChild(document.createElement("br"));
+
+
+                    // Output input matrix 1
+                    let text1 = document.createTextNode("Input Matrix:")
+                    matricesDiv.appendChild(text1);
+                    matricesDiv.appendChild(document.createElement("br"));
+
+
+                    // Add the matrix values to a table and add to document
+                    let table1 = document.createElement("table");
+                    let j, k;
+                    for (j = 0; j < row1; j++) {
+                        let row = document.createElement("tr");
+                        for (k = 0; k < col1; k++) {
+                            let cell = document.createElement("td");
+                            cell.innerText = inputMat1[j][k];
+                            row.appendChild(cell);
+                        }
+                        table1.appendChild(row);
+                    }
+                    matricesDiv.appendChild(table1);
+                    matricesDiv.appendChild(document.createElement("br"));
+
+
+                    // Output Result Matrix
+                    let text3 = document.createTextNode("Result:")
+                    matricesDiv.appendChild(text3);
+                    matricesDiv.appendChild(document.createElement("br"));
+
+
+                    // Add the matrix values to a table and add to document
+                    let table3 = document.createElement("table");
+                    for (j = 0; j < row1; j++) {
+                        let row = document.createElement("tr");
+                        for (k = 0; k < col1; k++) {
+                            let cell = document.createElement("td");
+                            cell.innerText = result[j][k];
+                            row.appendChild(cell);
+                        }
+                        table3.appendChild(row);
+                    }
+                    matricesDiv.appendChild(table3);
+                    matricesDiv.appendChild(document.createElement("br"));
+                    matricesDiv.appendChild(document.createElement("br"));
+
+
+                }
+
+            }
+        }
+
+
+	</script>
+
+	<script src="RowReduction.js"></script>
 
 
 </body>
